@@ -41,10 +41,10 @@ import java.util.HashSet;
 
 import io.github.webbluetoothcg.bletestperipheral.ServiceFragment.ServiceFragmentDelegate;
 
-public class Peripheral extends Activity implements ServiceFragmentDelegate {
+public class PeripheralActivity extends Activity implements ServiceFragmentDelegate {
 
   private static final int REQUEST_ENABLE_BT = 1;
-  private static final String TAG = Peripheral.class.getCanonicalName();
+  private static final String TAG = PeripheralActivity.class.getCanonicalName();
   private static final String CURRENT_FRAGMENT_TAG = "CURRENT_FRAGMENT";
 
   private TextView mAdvStatus;
@@ -119,7 +119,7 @@ public class Peripheral extends Activity implements ServiceFragmentDelegate {
         runOnUiThread(new Runnable() {
           @Override
           public void run() {
-            Toast.makeText(Peripheral.this, errorMessage, Toast.LENGTH_LONG).show();
+            Toast.makeText(PeripheralActivity.this, errorMessage, Toast.LENGTH_LONG).show();
           }
         });
         Log.e(TAG, "Error when connecting: " + status);
@@ -128,7 +128,7 @@ public class Peripheral extends Activity implements ServiceFragmentDelegate {
 
     @Override
     public void onCharacteristicReadRequest(BluetoothDevice device, int requestId, int offset,
-        BluetoothGattCharacteristic characteristic) {
+                                            BluetoothGattCharacteristic characteristic) {
       super.onCharacteristicReadRequest(device, requestId, offset, characteristic);
       Log.d(TAG, "Device tried to read characteristic: " + characteristic.getUuid());
       Log.d(TAG, "Value: " + Arrays.toString(characteristic.getValue()));
@@ -138,7 +138,7 @@ public class Peripheral extends Activity implements ServiceFragmentDelegate {
         return;
       }
       mGattServer.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS,
-          offset, characteristic.getValue());
+              offset, characteristic.getValue());
     }
 
     @Override
@@ -149,10 +149,10 @@ public class Peripheral extends Activity implements ServiceFragmentDelegate {
 
     @Override
     public void onCharacteristicWriteRequest(BluetoothDevice device, int requestId,
-        BluetoothGattCharacteristic characteristic, boolean preparedWrite, boolean responseNeeded,
-        int offset, byte[] value) {
+                                             BluetoothGattCharacteristic characteristic, boolean preparedWrite, boolean responseNeeded,
+                                             int offset, byte[] value) {
       super.onCharacteristicWriteRequest(device, requestId, characteristic, preparedWrite,
-          responseNeeded, offset, value);
+              responseNeeded, offset, value);
       Log.v(TAG, "Characteristic Write request: " + Arrays.toString(value));
       int status = mCurrentServiceFragment.writeCharacteristic(characteristic, offset, value);
       if (responseNeeded) {
@@ -179,7 +179,7 @@ public class Peripheral extends Activity implements ServiceFragmentDelegate {
 
     // If we are not being restored from a previous state then create and add the fragment.
     if (savedInstanceState == null) {
-      int peripheralIndex = getIntent().getIntExtra(Peripherals.EXTRA_PERIPHERAL_INDEX,
+      int peripheralIndex = getIntent().getIntExtra(PeripheralsActivity.EXTRA_PERIPHERAL_INDEX,
           /* default */ -1);
       if (peripheralIndex == 0) {
         mCurrentServiceFragment = new BatteryServiceFragment();
@@ -189,25 +189,26 @@ public class Peripheral extends Activity implements ServiceFragmentDelegate {
         Log.wtf(TAG, "Service doesn't exist");
       }
       getFragmentManager()
-          .beginTransaction()
-          .add(R.id.fragment_container, mCurrentServiceFragment, CURRENT_FRAGMENT_TAG)
-          .commit();
+              .beginTransaction()
+              .add(R.id.fragment_container, mCurrentServiceFragment, CURRENT_FRAGMENT_TAG)
+              .commit();
     } else {
       mCurrentServiceFragment = (ServiceFragment) getFragmentManager()
-          .findFragmentByTag(CURRENT_FRAGMENT_TAG);
+              .findFragmentByTag(CURRENT_FRAGMENT_TAG);
     }
     mBluetoothGattService = mCurrentServiceFragment.getBluetoothGattService();
 
     mAdvSettings = new AdvertiseSettings.Builder()
-        .setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_BALANCED)
-        .setTxPowerLevel(AdvertiseSettings.ADVERTISE_TX_POWER_MEDIUM)
-        .setConnectable(true)
-        .build();
+            .setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_LOW_LATENCY)
+            .setTxPowerLevel(AdvertiseSettings.ADVERTISE_TX_POWER_MEDIUM)
+            .setTimeout(180000)
+            .setConnectable(true)
+            .build();
     mAdvData = new AdvertiseData.Builder()
-        .setIncludeDeviceName(true)
-        .setIncludeTxPowerLevel(true)
-        .addServiceUuid(mCurrentServiceFragment.getServiceUUID())
-        .build();
+            .setIncludeDeviceName(true)
+            .setIncludeTxPowerLevel(true)
+            .addServiceUuid(mCurrentServiceFragment.getServiceUUID())
+            .build();
   }
 
   @Override
@@ -274,8 +275,8 @@ public class Peripheral extends Activity implements ServiceFragmentDelegate {
       Toast.makeText(this, R.string.bluetoothDeviceNotConnected, Toast.LENGTH_SHORT).show();
     } else {
       boolean indicate = (characteristic.getProperties()
-          & BluetoothGattCharacteristic.PROPERTY_INDICATE)
-          == BluetoothGattCharacteristic.PROPERTY_INDICATE;
+              & BluetoothGattCharacteristic.PROPERTY_INDICATE)
+              == BluetoothGattCharacteristic.PROPERTY_INDICATE;
       for (BluetoothDevice device : mBluetoothDevices) {
         // true for indication (acknowledge) and false for notification (unacknowledge).
         mGattServer.notifyCharacteristicChanged(device, characteristic, indicate);
@@ -290,7 +291,7 @@ public class Peripheral extends Activity implements ServiceFragmentDelegate {
 
   private void updateConnectedDevicesStatus() {
     final String message = getString(R.string.status_devicesConnected) + " "
-        + mBluetoothDevices.size();
+            + mBluetoothDevices.size();
     runOnUiThread(new Runnable() {
       @Override
       public void run() {
